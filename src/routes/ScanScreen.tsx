@@ -26,8 +26,16 @@ export default function ScanScreen() {
   const [hasTorch, setHasTorch] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [steady, setSteady] = useState(false);
+  const [flash, setFlash] = useState(false);
 
   const autoCapture = preferences?.autoCapture ?? false;
+
+  // Refs mirror the latest capture fn / capturing flag so the auto-capture interval can
+  // read them without being torn down and rebuilt on every state change.
+  const doCaptureRef = useRef<() => Promise<void>>();
+  const capturingRef = useRef(false);
+  capturingRef.current = capturing;
 
   // Ensure there is a session to capture into.
   useEffect(() => {
@@ -77,8 +85,11 @@ export default function ScanScreen() {
 
   const doCapture = useCallback(async () => {
     const video = videoRef.current;
-    if (!video || capturing) return;
+    if (!video || capturingRef.current) return;
     setCapturing(true);
+    // Brief shutter flash for feedback (both manual and automatic captures).
+    setFlash(true);
+    window.setTimeout(() => setFlash(false), 160);
     try {
       const blob = await camera.captureFrame(video);
       await addCapture(blob);
@@ -87,47 +98,61 @@ export default function ScanScreen() {
     } finally {
       setCapturing(false);
     }
-  }, [camera, addCapture, capturing, show]);
+  }, [camera, addCapture, show]);
+  doCaptureRef.current = doCapture;
 
-  // Optional automatic capture: capture when the frame is stable (low motion).
+  // Optional automatic capture: fire once the frame has held still (low motion) for a
+  // short moment. Time-based sampling + refs keep it stable and lenient enough for a
+  // handheld phone, and `steady` drives an on-screen "hold steady" hint.
   useEffect(() => {
-    if (!autoCapture || camState !== 'live') return;
-    let raf = 0;
-    let prev: ImageData | null = null;
-    let stableFrames = 0;
-    let cooldown = 0;
+    if (!autoCapture || camState !== 'live') {
+      setSteady(false);
+      return;
+    }
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 48;
+    canvas.width = 48;
+    canvas.height = 36;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    let prev: Uint8ClampedArray | null = null;
+    let stable = 0;
+    let cooldown = 0; // samples to skip after a capture (~300ms each)
 
-    const tick = () => {
+    const id = window.setInterval(() => {
       const video = videoRef.current;
-      if (video && ctx && video.videoWidth) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        if (prev) {
-          let diff = 0;
-          for (let i = 0; i < frame.data.length; i += 4) {
-            diff += Math.abs(frame.data[i]! - prev.data[i]!);
-          }
-          const avg = diff / (frame.data.length / 4);
-          if (avg < 6) stableFrames++;
-          else stableFrames = 0;
+      if (!video || !ctx || !video.videoWidth || capturingRef.current) return;
+      if (cooldown > 0) {
+        cooldown--;
+        return;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const cur = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      if (prev) {
+        let diff = 0;
+        for (let i = 0; i < cur.length; i += 4) {
+          diff +=
+            Math.abs(cur[i]! - prev[i]!) +
+            Math.abs(cur[i + 1]! - prev[i + 1]!) +
+            Math.abs(cur[i + 2]! - prev[i + 2]!);
         }
-        prev = frame;
-        if (cooldown > 0) cooldown--;
-        if (stableFrames > 12 && cooldown === 0 && !capturing) {
-          stableFrames = 0;
-          cooldown = 90; // ~1.5s at 60fps between auto captures
-          void doCapture();
+        const avg = diff / ((cur.length / 4) * 3); // mean per-channel change, 0..255
+        if (avg < 8) stable++;
+        else stable = 0;
+        setSteady(stable >= 1);
+        if (stable >= 2) {
+          stable = 0;
+          cooldown = 9; // ~2.7s pause before the next auto capture
+          setSteady(false);
+          void doCaptureRef.current?.();
         }
       }
-      raf = requestAnimationFrame(tick);
+      prev = cur;
+    }, 300);
+
+    return () => {
+      window.clearInterval(id);
+      setSteady(false);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [autoCapture, camState, doCapture, capturing]);
+  }, [autoCapture, camState]);
 
   const toggleTorch = async () => {
     try {
@@ -177,7 +202,18 @@ export default function ScanScreen() {
         aria-label="Camera preview"
       />
 
-      {camState === 'live' && <div className="camera__overlay" aria-hidden="true" />}
+      {camState === 'live' && (
+        <div
+          className={`camera__overlay ${steady ? 'camera__overlay--steady' : ''}`}
+          aria-hidden="true"
+        />
+      )}
+      {flash && <div className="camera__flash" aria-hidden="true" />}
+      {camState === 'live' && autoCapture && (
+        <div className="camera__hint" role="status">
+          {steady ? 'Hold steady… capturing' : 'Auto capture on — line up the page'}
+        </div>
+      )}
 
       <div className="camera__topbar">
         <button type="button" className="camera__pill" onClick={cancel}>
