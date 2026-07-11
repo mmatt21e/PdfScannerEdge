@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PocketScan">
+  <rect width="512" height="512" rx="112" fill="#1f6feb" />
+  <g fill="#ffffff">
+    <path d="M150 120h150l62 62v210a20 20 0 0 1-20 20H150a20 20 0 0 1-20-20V140a20 20 0 0 1 20-20z" />
+  </g>
+  <g fill="#1f6feb">
+    <path d="M300 120v62h62z" opacity="0.85" />
+    <rect x="176" y="250" width="160" height="16" rx="8" />
+    <rect x="176" y="290" width="160" height="16" rx="8" />
+    <rect x="176" y="330" width="112" height="16" rx="8" />
+  </g>
+</svg>
