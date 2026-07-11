@@ -10,7 +10,10 @@ import { fileURLToPath, URL } from 'node:url';
 // - vite-plugin-pwa (Workbox under the hood) for the service worker + manifest.
 // - Vitest for unit tests (jsdom environment).
 export default defineConfig(({ mode }) => ({
-  base: './',
+  // Relative base for local/dev and generic static hosts. On GitHub Pages (a project
+  // subpath like /PdfScannerEdge/) the deploy workflow sets BASE_PATH so assets, the
+  // manifest, and the service worker scope all resolve correctly.
+  base: process.env.BASE_PATH || './',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
