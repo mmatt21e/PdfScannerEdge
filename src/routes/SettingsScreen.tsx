@@ -8,11 +8,12 @@ import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { OnlineIndicator } from '@/components/Indicators';
 import { formatBytes } from '@/services/storage/StorageService';
 import { getCapabilities } from '@/services/capabilities';
+import { exportOutcomeMessage } from '@/utils/exportMessages';
 import type { ColorMode } from '@/domain/types';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
-  const { storage, db, scanSessionRepository } = useServices();
+  const { storage, db, scanSessionRepository, documentRepository, exporter } = useServices();
   const { show } = useToast();
   const { confirm } = useDialogs();
   const { preferences, update } = usePreferences();
@@ -71,6 +72,17 @@ export default function SettingsScreen() {
     show(`Removed ${removed} draft${removed === 1 ? '' : 's'}.`, 'info');
   };
 
+  const exportAll = async () => {
+    const docs = await documentRepository.list({ sortKey: 'createdAt', sortDirection: 'desc' });
+    if (docs.length === 0) {
+      show('There are no documents to export yet.', 'info');
+      return;
+    }
+    const outcome = await exporter.exportFolder('PocketScan', docs);
+    const msg = exportOutcomeMessage(outcome, docs.length);
+    if (msg) show(msg.text, msg.kind);
+  };
+
   return (
     <div>
       <div className="screen-header">
@@ -120,6 +132,9 @@ export default function SettingsScreen() {
               Request persistent storage
             </button>
           )}
+          <button type="button" className="btn btn--primary" onClick={exportAll}>
+            📤 Export all documents to device
+          </button>
           <button type="button" className="btn" onClick={() => navigate('/trash')}>
             🗑 Open trash
           </button>

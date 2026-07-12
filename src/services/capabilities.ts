@@ -12,6 +12,10 @@ export interface Capabilities {
   storageEstimate: boolean;
   serviceWorker: boolean;
   indexedDb: boolean;
+  /** File System Access API: save a file to a user-chosen location. */
+  fileSystemSave: boolean;
+  /** File System Access API: pick a device directory to write into. */
+  directoryPicker: boolean;
 }
 
 /** Whether a torch-capable camera track exists is only known after a stream opens, so
@@ -42,6 +46,8 @@ export function detectCapabilities(): Capabilities {
     storageEstimate: !!nav?.storage && typeof nav.storage.estimate === 'function',
     serviceWorker: !!nav && 'serviceWorker' in nav,
     indexedDb: typeof indexedDB !== 'undefined',
+    fileSystemSave: typeof window !== 'undefined' && 'showSaveFilePicker' in window,
+    directoryPicker: typeof window !== 'undefined' && 'showDirectoryPicker' in window,
   };
 }
 

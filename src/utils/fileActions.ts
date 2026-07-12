@@ -33,7 +33,23 @@ export async function sharePdf(
   const caps = getCapabilities();
   if (!caps.webShare) return 'unsupported';
 
-  const file = new File([blob], filename, { type: 'application/pdf' });
+  return shareFile(blob, filename, 'application/pdf', title);
+}
+
+/**
+ * Share an arbitrary file (e.g. a PDF or a .zip) via the Web Share API. On mobile this
+ * opens the system sheet including "Save to Files"/Drive, letting the user place it in a
+ * real device folder. Returns a status so the caller can fall back to download.
+ */
+export async function shareFile(
+  blob: Blob,
+  filename: string,
+  mime: string,
+  title = 'PocketScan export'
+): Promise<ShareResult> {
+  const caps = getCapabilities();
+  if (!caps.webShare) return 'unsupported';
+  const file = new File([blob], filename, { type: mime });
   try {
     if (caps.webShareFiles && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title });

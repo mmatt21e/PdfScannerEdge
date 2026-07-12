@@ -26,6 +26,7 @@ import { FolderService } from '@/services/FolderService';
 import { DocumentService } from '@/services/DocumentService';
 import { ScanSessionService } from '@/services/ScanSessionService';
 import { StorageService } from '@/services/storage/StorageService';
+import { ExportService } from '@/services/ExportService';
 
 export interface Services {
   db: PocketScanDatabase;
@@ -40,6 +41,7 @@ export interface Services {
   documents: DocumentService;
   scanSessions: ScanSessionService;
   storage: StorageService;
+  exporter: ExportService;
 }
 
 export interface CreateServicesOptions {
@@ -69,6 +71,7 @@ export function createServices(options: CreateServicesOptions = {}): Services {
     maxImageDimension
   );
   const storage = new StorageService();
+  const exporter = new ExportService();
 
   return {
     db,
@@ -83,6 +86,7 @@ export function createServices(options: CreateServicesOptions = {}): Services {
     documents,
     scanSessions,
     storage,
+    exporter,
   };
 }
 

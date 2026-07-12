@@ -20,7 +20,7 @@ function formatDateTime(iso: string): string {
 export default function DocumentDetailScreen() {
   const { documentId } = useParams();
   const navigate = useNavigate();
-  const { documents } = useServices();
+  const { documents, exporter } = useServices();
   const { show } = useToast();
   const { confirm, prompt } = useDialogs();
   const doc = useDocument(documentId);
@@ -92,6 +92,14 @@ export default function DocumentDetailScreen() {
       show('Printing is unavailable. Downloading instead.', 'info');
       onDownload();
     }
+  };
+
+  const onExport = async () => {
+    const outcome = await exporter.exportDocument(doc);
+    if (outcome === 'saved') show('Saved to your chosen folder.', 'success');
+    else if (outcome === 'shared') show('Choose a folder in the share sheet to save it.', 'info');
+    else if (outcome === 'downloaded') show('Saved to your Downloads folder.', 'success');
+    else if (outcome === 'failed') show('Export failed. Try Download instead.', 'error');
   };
 
   const onDelete = async () => {
@@ -170,6 +178,9 @@ export default function DocumentDetailScreen() {
       <div className="btn-row" style={{ marginBottom: '1rem' }}>
         <button type="button" className="btn" onClick={onFullscreen}>
           ⛶ Full screen
+        </button>
+        <button type="button" className="btn btn--primary" onClick={onExport}>
+          📤 Export to device
         </button>
         <button type="button" className="btn" onClick={onDownload}>
           ⬇ Download

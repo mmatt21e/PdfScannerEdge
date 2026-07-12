@@ -133,7 +133,25 @@ All user data lives in the browser's **IndexedDB** via Dexie:
   PDFs are never deleted automatically.**
 
 Because data is device-local, clearing your browser data or uninstalling the PWA removes
-your documents. Use **Download** or **Share** to keep copies elsewhere.
+your documents. Use **Download**, **Share**, or **Export** to keep copies elsewhere.
+
+## Exporting to real device folders
+
+PocketScan's folders are virtual (stored in IndexedDB), but you can export PDFs into real
+folders on your device:
+
+- **A single PDF** — open it and tap **Export to device**. On desktop Chromium this opens a
+  native "Save As" dialog so you can pick any folder; on mobile it opens the system share
+  sheet (**Save to Files** / Drive) so you can choose a folder; otherwise it downloads.
+- **A whole folder** — open a folder and tap **Export**. Where the File System Access
+  directory picker is available (desktop Chromium), you pick a device folder and PocketScan
+  writes every PDF into a subfolder named after your virtual folder. Elsewhere (mobile,
+  Safari, Firefox) it packages the folder's PDFs into a single **`<folder>.zip`** you can
+  save to Files and extract into a real folder.
+- **Everything** — **Settings → Export all documents to device** exports your whole library
+  the same way.
+
+The ZIP is generated entirely on-device (no compression, no dependencies, no upload).
 
 ---
 
