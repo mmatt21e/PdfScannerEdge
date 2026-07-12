@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-      - claude/pocketscan-pwa-scanner-lj9zcy
   workflow_dispatch:
 
 permissions:

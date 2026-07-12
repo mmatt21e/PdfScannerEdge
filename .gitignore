@@ -4,8 +4,20 @@ dev-dist
 coverage
 playwright-report
 test-results
+*.tsbuildinfo
 .DS_Store
 *.local
 .env
 .env.*
 !.env.example
+
+# AI assistant tooling files
+.claude/
+.codex/
+.cursor/
+CLAUDE.md
+CLAUDE.local.md
+CODEX.md
+AGENTS.md
+*claude*
+*codex*
